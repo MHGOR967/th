@@ -1,0 +1,11 @@
+services:
+  - type: worker
+    name: telegram-download-bot
+    env: python
+    buildCommand: pip install -r requirements.txt && apt-get update && apt-get install -y ffmpeg
+    startCommand: python3 bot.py
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_ID
+        sync: false
