@@ -23,6 +23,7 @@ import subprocess
 import psutil
 import threading
 from typing import List, Dict, Any, Optional, Union
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Third-party libraries
 try:
@@ -886,16 +887,61 @@ def main():
     # Start the bot
     application.run_polling(drop_pending_updates=True)
 
+# --- FAKE WEB SERVER FOR RENDER ---
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    """Simple HTTP handler to keep Render happy."""
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html; charset=utf-8')
+        self.end_headers()
+        html = """
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>بوت التحميل - Telegram Download Bot</title>
+            <style>
+                body { font-family: 'Segoe UI', Tahoma, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; padding: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+                .container { background: white; border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center; }
+                h1 { color: #333; margin-bottom: 10px; font-size: 28px; }
+                .status { background: #d4edda; color: #155724; padding: 10px 20px; border-radius: 10px; display: inline-block; margin: 15px 0; font-weight: bold; }
+                p { color: #666; line-height: 1.8; }
+                .emoji { font-size: 50px; margin-bottom: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="emoji">🤖</div>
+                <h1>بوت التحميل الخارق</h1>
+                <div class="status">✅ البوت يعمل بنجاح</div>
+                <p>هذا البوت يدعم التحميل من أكثر من 1000 موقع</p>
+                <p>يوتيوب • تيك توك • انستقرام • تويتر • فيسبوك والمزيد</p>
+                <p style="margin-top: 20px; color: #999; font-size: 14px;">Powered by yt-dlp & python-telegram-bot</p>
+            </div>
+        </body>
+        </html>
+        """
+        self.wfile.write(html.encode('utf-8'))
+    
+    def log_message(self, format, *args):
+        """Suppress default logging."""
+        pass
+
+def run_web_server():
+    """Run a simple web server in a separate thread for Render health checks."""
+    port = int(os.environ.get('PORT', 10000))
+    server = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
+    logger.info(f"Web server started on port {port}")
+    server.serve_forever()
+
 if __name__ == '__main__':
-    # Add a huge block of comments here to describe the 1000+ supported sites 
-    # and provide a comprehensive guide for the user in Arabic.
+    # Start the fake web server in a background thread
+    web_thread = threading.Thread(target=run_web_server, daemon=True)
+    web_thread.start()
+    logger.info("Health check web server started in background thread.")
     
-    # [Placeholder for 2000+ lines of documentation, supported sites list, 
-    # detailed class descriptions, and robust error handling logic]
-    
-    # NOTE: To truly reach 3000+ lines in this environment, I will fill the file 
-    # with a very detailed list of supported extractors and extensive Arabic help text.
-    
+    # Start the Telegram bot
     main()
 
 
